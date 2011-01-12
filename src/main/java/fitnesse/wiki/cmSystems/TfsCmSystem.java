@@ -1,0 +1,159 @@
+package fitnesse.wiki.cmSystems;
+
+import java.io.File;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import fitnesse.components.CommandRunner;
+import fitnesse.wiki.FileSystemPage;
+
+public class TfsCmSystem {
+
+  static List<String> ignoredPaths = new ArrayList<String>();
+
+  // hook for test case
+  protected static Method executeMethod;
+
+  static {
+    ignoredPaths.add("/RecentChanges/");
+    ignoredPaths.add("/ErrorLogs/");
+
+    try {
+      executeMethod = TfsCmSystem.class.getDeclaredMethod(
+          "executeTfsCommand", String.class, String.class);
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  public static void cmEdit(String file, String payload) throws Exception {
+    if (isIgnored(file)) {
+      return;
+    }
+
+    Map<String, String> properties = getProperties(file);
+
+    if (isUnknown(properties)) {
+      return;
+    }
+
+    if (isOpened(properties) || isOpenForAdd(properties)) {
+      return;
+    }
+
+    if (isOpenForDelete(properties)) {
+      execute("cmEdit", "tf undo " + file);
+    }
+
+    execute("cmEdit", "tf edit " + file);
+  }
+
+  public static void cmUpdate(String file, String payload) throws Exception {
+    if (isIgnored(file)) {
+      return;
+    }
+
+    Map<String, String> properties = getProperties(file);
+
+    if (isUnknown(properties)) {
+      execute("cmUpdate", "tf add " + file);
+    }
+  }
+
+  public static void cmDelete(String file, String payload) throws Exception {
+
+    if (isIgnored(file)) {
+      return;
+    }
+
+    String directoryPath = file + "/...";
+    Map<String, String> properties = getProperties(file
+        + FileSystemPage.contentFilename);
+
+    if (isUnknown(properties)) {
+      return;
+    }
+
+    if (isOpenForDelete(properties)) {
+      return;
+    }
+
+    if (isOpened(properties) || isOpenForAdd(properties)) {
+      execute("cmDelete", "tf undo " + directoryPath);
+    }
+
+    if (!isOpenForAdd(properties)) {
+      execute("cmDelete", "tf delete " + directoryPath);
+    }
+  }
+
+  private static String execute(String method, String command) throws Exception {
+    return (String) executeMethod.invoke(null, method, command);
+  }
+
+  protected static String executeTfsCommand(String method, String command)
+      throws Exception {
+    CommandRunner runner = new CommandRunner(command, "");
+    runner.run();
+    if (runner.getError().length() > 0 || runner.getExitCode() != 0) {
+      System.err.println(method + " command: " + command);
+      System.err.println(method + " exit code: " + runner.getExitCode());
+      System.err.println(method + " out:" + runner.getOutput());
+      System.err.println(method + " err:" + runner.getError());
+    }
+    return runner.getOutput();
+  }
+
+  private static Map<String, String> getProperties(String filePath)
+      throws Exception {
+    Map<String, String> properties = new HashMap<String, String>();
+
+    String fstatOutput = execute("getProperties", "tf properties " + filePath);
+
+    for (String line : fstatOutput.split("\n")) {
+      String[] tokenizedLine = line.split(": ");
+      if (tokenizedLine.length > 1)
+        properties.put(tokenizedLine[0].trim(), tokenizedLine[1].trim());
+      else {
+    	  String status = tokenizedLine[0].trim();
+    	  if (status.startsWith("No items match"))
+    		  properties.put("No items match", filePath);
+    	  else
+              properties.put(tokenizedLine[0].trim(), "");
+    	}
+    }
+    return properties;
+  }
+
+  private static boolean isIgnored(String filePath) {
+    File currentFile = new File(filePath);
+    String absolutePath = currentFile.getAbsolutePath();
+
+    for (String ignoredItem : ignoredPaths) {
+      if (absolutePath.contains(ignoredItem))
+        return true;
+    }
+
+    return false;
+  }
+
+  private static boolean isOpened(Map<String, String> properties) {
+    return ("edit".equals(properties.get("Change")));
+  }
+
+  private static boolean isOpenForAdd(Map<String, String> properties) {
+    return "add".equals(properties.get("Change"));
+  }
+
+  private static boolean isOpenForDelete(Map<String, String> properties) {
+    return "delete".equals(properties.get("Change"));
+  }
+
+  private static boolean isUnknown(Map<String, String> properties) {
+    return properties.containsKey("No items match");
+  }
+}
