@@ -4,6 +4,7 @@
   </description>
 
 	<property name="project.name" value="${ant.project.name}" />
+	<property name="version" value="0.1" />
 	<property name="src" location="src/main/java" />
 	<property name="test" location="src/test/java" />
 	<property name="classes" location="target/classes" />
@@ -41,18 +42,22 @@
 		<tstamp />
 		<copy todir="dist/${project.name}">
 			<fileset dir="extra/release" includes="**" />
-			<fileset dir="dist" includes="${project.name}.jar" />
+			<fileset dir="dist" includes="${project.name}-${version}.jar" />
 		</copy>
 	</target>
 
 	<target name="zip_bin" depends="assemble_bin" description="zip up the binary distribution">
 		<tstamp />
-		<zip zipfile="${project.name}${DSTAMP}.zip" basedir="dist" includes="${project.name}/**" />
+		<zip zipfile="dist/${project.name}-${version}-${DSTAMP}.zip">
+			<fileset dir="${basedir}/dist">
+    			<include name="${project.name}/**"/>
+			</fileset>
+		</zip>
 	</target>
 
 	<target name="zip_src" depends="clean_dist" description="Packages all the source into a .zip file">
 		<tstamp />
-		<zip zipfile="${project.name}_src${DSTAMP}.zip">
+		<zip zipfile="dist/${project.name}-${version}_src-${DSTAMP}.zip">
 			<fileset dir="${basedir}">
 				<include name="src/**" />
 				<include name="lib/**" />
@@ -65,9 +70,9 @@
 
 	<target name="jar" depends="build" description="generate the jar file">
 		<mkdir dir="dist" />
-		<delete file="dist/${project.name}.jar" />
+		<delete file="dist/${project.name}-${version}.jar" />
 
-		<jar jarfile="dist/${project.name}.jar" basedir="${classes}">
+		<jar jarfile="dist/${project.name}-${version}.jar" basedir="${classes}">
 			<include name="**/*.class" />
 			<exclude name="**/*Test.class" />
 			<exclude name="**/*Test$*.class" />
@@ -113,7 +118,7 @@
 		<delete>
 			<fileset dir="dist">
 				<include name="${project.name}*.zip" />
-				<include name="${project.name}.jar" />
+				<include name="${project.name}*.jar" />
 			</fileset>
 		</delete>
 		<delete dir="dist/${project.name}" />
