@@ -199,6 +199,13 @@ public class TfsCmSystemTest {
     assertSentRequests(expectations, TfsCmSystemDouble
         .getRecordedCommands());
   }
+  
+  @Test
+  public void cmPreDeleteDoesNothing() throws Exception {
+	 TfsCmSystemDouble.cmPreDelete(fileName, "");
+     assertSentRequests(expectations, TfsCmSystemDouble
+	            .getRecordedCommands());
+  }
 
   protected void assertSentRequests(List<String> expectations,
       List<String> recordedCommands) {
