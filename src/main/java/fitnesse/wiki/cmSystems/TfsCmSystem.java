@@ -86,7 +86,11 @@ public class TfsCmSystem {
       execute("cmDelete", "tf delete " + directory);
     }
   }
-
+  
+  public static void cmPreDelete(String fileName, String string) {
+	// Not needed for Team Foundation server		
+  }
+  
   private static String execute(String method, String command) throws Exception {
     return (String) executeMethod.invoke(null, method, command);
   }
