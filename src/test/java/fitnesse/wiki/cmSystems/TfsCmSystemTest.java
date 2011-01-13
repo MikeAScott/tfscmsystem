@@ -73,7 +73,7 @@ public class TfsCmSystemTest {
   @Test
   public void cmEditDeletedFile() throws Exception {
     appendStatusCommandToResponseAndExpectation(fileName, createDeletePropertiesResponse(fileName));
-    appendRevertCommandToResponseAndExpectation(fileName);
+    appendUndoCommandToResponseAndExpectation(fileName);
     appendEditCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
@@ -85,8 +85,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmUpdateUnversionedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName,
-        createUnversionedPropertiesResponse(fileName));
+    appendStatusCommandToResponseAndExpectation(fileName, createUnversionedPropertiesResponse(fileName));
     appendAddCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
@@ -98,8 +97,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmUpdateUnopenedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName,
-        createUnopenedPropertiesResponse(fileName));
+    appendStatusCommandToResponseAndExpectation(fileName, createUnopenedPropertiesResponse(fileName));
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmUpdate(fileName, "");
@@ -110,8 +108,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmUpdateEditingFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName,
-        createEditPropertiesResponse(fileName));
+    appendStatusCommandToResponseAndExpectation(fileName, createEditPropertiesResponse(fileName));
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmUpdate(fileName, "");
@@ -122,8 +119,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmUpdateAddingFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName,
-        createAddPropertiesResponse(fileName));
+    appendStatusCommandToResponseAndExpectation(fileName, createAddPropertiesResponse(fileName));
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmUpdate(fileName, "");
@@ -146,8 +142,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmDeleteUnversionedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName + "/content.txt",
-        createUnversionedPropertiesResponse(fileName + "/content.txt"));
+    appendStatusCommandToResponseAndExpectation(fileName, createUnversionedPropertiesResponse(fileName));
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmDelete(fileName, "");
@@ -158,9 +153,9 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmDeleteUnopenedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName + "/content.txt",
-        createUnopenedPropertiesResponse(fileName + "/content.txt"));
-    appendDeleteCommandToResponseAndExpectation(fileName + "/...");
+    appendStatusCommandToResponseAndExpectation(fileName, createUnopenedPropertiesResponse(fileName));
+    appendRecursiveUndoCommandToResponseAndExpectation(fileName);
+    appendDeleteCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmDelete(fileName, "");
@@ -171,10 +166,9 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmDeleteEditingFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName + "/content.txt",
-        createEditPropertiesResponse(fileName + "/content.txt"));
-    appendRevertCommandToResponseAndExpectation(fileName + "/...");
-    appendDeleteCommandToResponseAndExpectation(fileName + "/...");
+    appendStatusCommandToResponseAndExpectation(fileName, createEditPropertiesResponse(fileName));
+    appendRecursiveUndoCommandToResponseAndExpectation(fileName);
+    appendDeleteCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmDelete(fileName, "");
@@ -185,9 +179,8 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmDeleteAddingFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName + "/content.txt",
-        createAddPropertiesResponse(fileName + "/content.txt"));
-    appendRevertCommandToResponseAndExpectation(fileName + "/...");
+    appendStatusCommandToResponseAndExpectation(fileName, createAddPropertiesResponse(fileName));
+    appendRecursiveUndoCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmDelete(fileName, "");
@@ -198,8 +191,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmDeleteDeletedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName + "/content.txt",
-        createDeletePropertiesResponse(fileName + "/content.txt"));
+    appendStatusCommandToResponseAndExpectation(fileName, createDeletePropertiesResponse(fileName));
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmDelete(fileName, "");
@@ -264,12 +256,19 @@ private String getPropertyResponse(String file, String change, boolean onServer,
     expectations.add(("tf add " + fileName));
   }
 
-  protected void appendRevertCommandToResponseAndExpectation(String fileName) {
+  protected void appendUndoCommandToResponseAndExpectation(String fileName) {
 	String cmdResponse = getCommandResponse(fileName,"Undoing edit: "); 
-    returnMap.put(("tf undo " + fileName), cmdResponse);
-    expectations.add(("tf undo " + fileName));
+    returnMap.put(("tf undo " + fileName + " /noprompt"), cmdResponse);
+    expectations.add(("tf undo " + fileName + " /noprompt"));
   }
 
+  protected void appendRecursiveUndoCommandToResponseAndExpectation(String fileName) {
+	String cmdResponse = getCommandResponse(fileName,"Undoing edit: "); 
+    returnMap.put(("tf undo " + fileName + " /recursive /noprompt"), cmdResponse);
+    expectations.add(("tf undo " + fileName + " /recursive /noprompt"));
+ }
+
+  
   protected void appendEditCommandToResponseAndExpectation(String fileName) {
 	String  cmdResponse = getCommandResponse(fileName, "");
     returnMap.put(("tf edit " + fileName), cmdResponse);
@@ -284,12 +283,6 @@ private String getPropertyResponse(String file, String change, boolean onServer,
 	  return dir.getPath() + ":\n" + action + file.getName();
   }
 
-  protected void appendReopenCommandToResponseAndExpectation(String fileName) {
-    returnMap.put(("p4 reopen " + fileName),
-        (fileName + "#1 - reopened for edit"));
-    expectations.add(("p4 reopen " + fileName));
-  }
-
   protected void appendDeleteCommandToResponseAndExpectation(String fileName) {
 	String  cmdResponse = getCommandResponse(fileName, "");
     returnMap.put(("tf delete " + fileName),cmdResponse);
@@ -297,9 +290,9 @@ private String getPropertyResponse(String file, String change, boolean onServer,
   }
 
   protected void appendStatusCommandToResponseAndExpectation(String filename,
-      String fstatResponse) {
+      String propertiesResponse) {
     String fstatCommand = statusCommand(filename);
-    returnMap.put(fstatCommand, fstatResponse);
+    returnMap.put(fstatCommand, propertiesResponse);
     expectations.add(fstatCommand);
   }
 }
