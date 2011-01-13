@@ -46,7 +46,7 @@ public class TfsCmSystem {
     }
 
     if (isOpenForDelete(properties)) {
-      execute("cmEdit", "tf undo " + file);
+      execute("cmEdit", "tf undo " + file + " /noprompt");
     }
 
     execute("cmEdit", "tf edit " + file);
@@ -64,15 +64,13 @@ public class TfsCmSystem {
     }
   }
 
-  public static void cmDelete(String file, String payload) throws Exception {
+  public static void cmDelete(String directory, String payload) throws Exception {
 
-    if (isIgnored(file)) {
+    if (isIgnored(directory)) {
       return;
     }
 
-    String directoryPath = file + "/...";
-    Map<String, String> properties = getProperties(file
-        + FileSystemPage.contentFilename);
+    Map<String, String> properties = getProperties(directory);
 
     if (isUnknown(properties)) {
       return;
@@ -82,12 +80,10 @@ public class TfsCmSystem {
       return;
     }
 
-    if (isOpened(properties) || isOpenForAdd(properties)) {
-      execute("cmDelete", "tf undo " + directoryPath);
-    }
+    execute("cmDelete", "tf undo " + directory + " /recursive /noprompt");
 
     if (!isOpenForAdd(properties)) {
-      execute("cmDelete", "tf delete " + directoryPath);
+      execute("cmDelete", "tf delete " + directory);
     }
   }
 

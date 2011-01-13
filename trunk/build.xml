@@ -26,6 +26,8 @@
 	</path>
 
 	<target name="all" depends="testbuild" description="Run this target any time you change code or acceptance tests. It will clean, then compile the source, run all the unit test and fintesse acceptance tests." />
+	
+	<target name="full" depends="clean, clean_dist, compile, unit_test, jar, copy_distribution, build_distribution" description="cleans and buiuld everything ready for distribution" /> 
 
 	<target name="build" depends="clean, compile" description="clean, then compile the source" />
 
