@@ -31,6 +31,8 @@ public class TfsCmSystem {
   }
 
   public static void cmEdit(String file, String payload) throws Exception {
+	Log("INFO: cmEdit(" + file + ")");  
+	  
     if (isIgnored(file)) {
       return;
     }
@@ -53,6 +55,7 @@ public class TfsCmSystem {
   }
 
   public static void cmUpdate(String file, String payload) throws Exception {
+	Log("INFO: cmUpdate(" + file + ")");  
     if (isIgnored(file)) {
       return;
     }
@@ -60,12 +63,35 @@ public class TfsCmSystem {
     Map<String, String> properties = getProperties(file);
 
     if (isUnknown(properties)) {
-      execute("cmUpdate", "tf add " + file);
+        execute("cmUpdate", "tf add " + file);
+        return;
     }
+
+    if (isOpenForDelete(properties)) {
+    	execute("cmUpdate", "tf undo " + file + " /noprompt");
+    	if (isFolder(properties))
+    		execute("cmUpdate", "tf edit " + file + "*");
+    	else
+    		execute("cmUpdate", "tf edit " + file + "*");
+    	return;
+    }
+
+    if (isDeletedOnServer(properties)) {
+    	execute("cmUpdate", "tf add " + file);
+    	return;
+    }
+    
+    if (!isOpened(properties) && !isOpenForAdd(properties))
+    	execute("cmUpdate", "tf edit " + file);
+    
+
+    
   }
 
-  public static void cmDelete(String directory, String payload) throws Exception {
+ 
 
+public static void cmDelete(String directory, String payload) throws Exception {
+	Log("INFO: cmDelete(" + directory + ")");  
     if (isIgnored(directory)) {
       return;
     }
@@ -130,14 +156,10 @@ public class TfsCmSystem {
   }
 
   private static boolean isIgnored(String filePath) {
-    File currentFile = new File(filePath);
-    String absolutePath = currentFile.getAbsolutePath();
-
     for (String ignoredItem : ignoredPaths) {
-      if (absolutePath.contains(ignoredItem))
+      if (filePath.contains(ignoredItem))
         return true;
     }
-
     return false;
   }
 
@@ -145,6 +167,10 @@ public class TfsCmSystem {
     return ("edit".equals(properties.get("Change")));
   }
 
+  private static boolean isFolder(Map<String, String> properties) {
+	    return "folder".equals(properties.get("Type"));
+  }
+  
   private static boolean isOpenForAdd(Map<String, String> properties) {
     return "add".equals(properties.get("Change"));
   }
@@ -155,5 +181,13 @@ public class TfsCmSystem {
 
   private static boolean isUnknown(Map<String, String> properties) {
     return properties.containsKey("No items match");
+  }
+  
+  private static boolean isDeletedOnServer(Map<String, String> properties) {
+    return properties.containsKey("Deletion ID");
+  }
+  
+  private static void Log(String message){
+	  //System.out.println(message);
   }
 }

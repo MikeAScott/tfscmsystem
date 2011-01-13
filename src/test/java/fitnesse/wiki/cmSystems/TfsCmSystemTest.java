@@ -72,7 +72,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmEditDeletedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName, createDeletePropertiesResponse(fileName));
+    appendStatusCommandToResponseAndExpectation(fileName, createDeleteFolderPropertiesResponse(fileName));
     appendUndoCommandToResponseAndExpectation(fileName);
     appendEditCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
@@ -98,6 +98,7 @@ public class TfsCmSystemTest {
   @Test
   public void cmUpdateUnopenedFile() throws Exception {
     appendStatusCommandToResponseAndExpectation(fileName, createUnopenedPropertiesResponse(fileName));
+    appendEditCommandToResponseAndExpectation(fileName);
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmUpdate(fileName, "");
@@ -131,7 +132,27 @@ public class TfsCmSystemTest {
   @Test
   public void cmUpdateDeletedFile() throws Exception {
     appendStatusCommandToResponseAndExpectation(fileName,
-        createDeletePropertiesResponse(fileName));
+        createDeleteFolderPropertiesResponse(fileName));
+    appendUndoCommandToResponseAndExpectation(fileName);
+    appendEditCommandToResponseAndExpectation(fileName + "*");
+    appendStatusCommandToResponseAndExpectation(fileName + "/content.txt",
+            createEditPropertiesResponse(fileName + "/content.txt"));
+    
+    TfsCmSystemDouble.setCommandResponseMap(returnMap);
+
+    TfsCmSystemDouble.cmUpdate(fileName, "");
+    TfsCmSystemDouble.cmUpdate(fileName + "/content.txt", "");
+
+    assertSentRequests(expectations, TfsCmSystemDouble
+        .getRecordedCommands());
+  }
+
+  @Test
+  public void cmUpdatePreviouslyDeletedFolder() throws Exception {
+    appendStatusCommandToResponseAndExpectation(fileName,
+        createPreviouslyDeletedFolderPropertiesResponse(fileName));
+    appendAddCommandToResponseAndExpectation(fileName);
+    
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmUpdate(fileName, "");
@@ -139,7 +160,21 @@ public class TfsCmSystemTest {
     assertSentRequests(expectations, TfsCmSystemDouble
         .getRecordedCommands());
   }
+  
+  @Test
+  public void cmUpdatePreviouslyDeletedFile() throws Exception {
+    appendStatusCommandToResponseAndExpectation(fileName,
+        createPreviouslyDeletedFilePropertiesResponse(fileName));
+    appendAddCommandToResponseAndExpectation(fileName);
+    
+    TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
+    TfsCmSystemDouble.cmUpdate(fileName, "");
+
+    assertSentRequests(expectations, TfsCmSystemDouble
+        .getRecordedCommands());
+  }
+  
   @Test
   public void cmDeleteUnversionedFile() throws Exception {
     appendStatusCommandToResponseAndExpectation(fileName, createUnversionedPropertiesResponse(fileName));
@@ -191,7 +226,7 @@ public class TfsCmSystemTest {
 
   @Test
   public void cmDeleteDeletedFile() throws Exception {
-    appendStatusCommandToResponseAndExpectation(fileName, createDeletePropertiesResponse(fileName));
+    appendStatusCommandToResponseAndExpectation(fileName, createDeleteFolderPropertiesResponse(fileName));
     TfsCmSystemDouble.setCommandResponseMap(returnMap);
 
     TfsCmSystemDouble.cmDelete(fileName, "");
@@ -223,34 +258,49 @@ public class TfsCmSystemTest {
   }
 
   protected String createUnopenedPropertiesResponse(String file) {
-    return getPropertyResponse(file, "none", true, true);
+    return getPropertyResponse(file, "file", "none", true, true, false);
   }
 
-private String getPropertyResponse(String file, String change, boolean onServer, boolean inWorkspace) {
+private String getPropertyResponse(String file, String type, String change, boolean onServer, boolean inWorkspace, boolean deletedOnServer) {
 	String localPath = inWorkspace? " " + new File(file).getAbsolutePath():"";
 	String serverPath = onServer? " $/DEV/project" + file.replace('\\', '/'):""; 
+	String deleteKey = deletedOnServer? "  Deletion ID : 8679\n" :"";
 
 	return "Local information:\n" +
 		   "  Local path :" + localPath + "\n" +
 		   "  Server path:"  + serverPath + "\n"+
     	   "  Change     : " + change + "\n" +
-    	   "  Type        : file\n" +
+    	   "  Type        : "+type+"\n" +
     	   "Server information:\n" + 
-    	   "  Server path :" + serverPath + "\n"+
+    	   "  Server path :" + serverPath + "\n" +
+    	   deleteKey +
     	   "  Lock        : none\n" +
     	   "  Type        : file\n";
+
 }
 
   protected String createEditPropertiesResponse(String file) {
-	  return getPropertyResponse(file, "edit", true, true);
+	  return getPropertyResponse(file, "file", "edit", true, true, false);
   }
 
   protected String createAddPropertiesResponse(String file) {
-	  return getPropertyResponse(file, "add", false, true);
+	  return getPropertyResponse(file, "file", "add", false, true, false);
   }
 
-  protected String createDeletePropertiesResponse(String file) {
-	  return getPropertyResponse(file,"delete", true, false);
+  protected String createDeleteFolderPropertiesResponse(String file) {
+	  return getPropertyResponse(file,"folder", "delete", true, false, false);
+  }
+
+  protected String createDeleteFilePropertiesResponse(String file) {
+	  return getPropertyResponse(file,"file", "none", true, false, false);
+  }
+  
+  protected String createPreviouslyDeletedFolderPropertiesResponse(String file) {
+	  return getPropertyResponse(file,"folder", "none", false, false, true);
+  }
+
+  protected String createPreviouslyDeletedFilePropertiesResponse(String file) {
+	  return getPropertyResponse(file,"file", "none", false, false, true);
   }
 
   protected String statusCommand(String file) {
