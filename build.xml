@@ -4,7 +4,7 @@
   </description>
 
 	<property name="project.name" value="${ant.project.name}" />
-	<property name="version" value="0.3" />
+	<property name="version" value="0.4" />
 	<property name="src" location="src/main/java" />
 	<property name="test" location="src/test/java" />
 	<property name="classes" location="target/classes" />

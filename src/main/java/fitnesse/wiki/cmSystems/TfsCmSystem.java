@@ -184,10 +184,11 @@ public static void cmDelete(String directory, String payload) throws Exception {
   }
   
   private static boolean isDeletedOnServer(Map<String, String> properties) {
-    return properties.containsKey("Deletion ID");
+    return properties.containsKey("Deletion ID") && 
+    		!"0".equals(properties.get("Deletion ID"));
   }
   
   private static void Log(String message){
-	  //System.out.println(message);
+	  System.out.println(message);
   }
 }
