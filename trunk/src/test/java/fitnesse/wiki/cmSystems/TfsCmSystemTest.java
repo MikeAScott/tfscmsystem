@@ -174,6 +174,20 @@ public class TfsCmSystemTest {
     assertSentRequests(expectations, TfsCmSystemDouble
         .getRecordedCommands());
   }
+ 
+  @Test
+  public void cmUpdateFileWithDeletionIdOfZero() throws Exception {
+    appendStatusCommandToResponseAndExpectation(fileName,
+        createDeletedIdZeroFilePropertiesResponse(fileName));
+    appendEditCommandToResponseAndExpectation(fileName);
+    
+    TfsCmSystemDouble.setCommandResponseMap(returnMap);
+
+    TfsCmSystemDouble.cmUpdate(fileName, "");
+
+    assertSentRequests(expectations, TfsCmSystemDouble
+        .getRecordedCommands());
+  }
   
   @Test
   public void cmDeleteUnversionedFile() throws Exception {
@@ -258,15 +272,15 @@ public class TfsCmSystemTest {
   }
 
   protected String createUnopenedPropertiesResponse(String file) {
-    return getPropertyResponse(file, "file", "none", true, true, false);
+    return getPropertyResponse(file, "file", "none", true, true, false, 0);
   }
 
-private String getPropertyResponse(String file, String type, String change, boolean onServer, boolean inWorkspace, boolean deletedOnServer) {
+private String getPropertyResponse(String file, String type, String change, boolean onServer, boolean inWorkspace, boolean deletedOnServer, int deletedOnServerVersion) {
 	String localPath = inWorkspace? " " + new File(file).getAbsolutePath():"";
 	String serverPath = onServer? " $/DEV/project" + file.replace('\\', '/'):""; 
-	String deleteKey = deletedOnServer? "  Deletion ID : 8679\n" :"";
+	String deleteKey = deletedOnServer? "  Deletion ID : " + deletedOnServerVersion + "\n" :"";
 
-	return "Local information:\n" +
+	String response =  "Local information:\n" +
 		   "  Local path :" + localPath + "\n" +
 		   "  Server path:"  + serverPath + "\n"+
     	   "  Change     : " + change + "\n" +
@@ -276,33 +290,39 @@ private String getPropertyResponse(String file, String type, String change, bool
     	   deleteKey +
     	   "  Lock        : none\n" +
     	   "  Type        : file\n";
+	System.out.println(response);
+	return response;
 
 }
 
   protected String createEditPropertiesResponse(String file) {
-	  return getPropertyResponse(file, "file", "edit", true, true, false);
+	  return getPropertyResponse(file, "file", "edit", true, true, false, 0);
   }
 
   protected String createAddPropertiesResponse(String file) {
-	  return getPropertyResponse(file, "file", "add", false, true, false);
+	  return getPropertyResponse(file, "file", "add", false, true, false,0);
   }
 
   protected String createDeleteFolderPropertiesResponse(String file) {
-	  return getPropertyResponse(file,"folder", "delete", true, false, false);
+	  return getPropertyResponse(file,"folder", "delete", true, false, false,0);
   }
 
   protected String createDeleteFilePropertiesResponse(String file) {
-	  return getPropertyResponse(file,"file", "none", true, false, false);
+	  return getPropertyResponse(file,"file", "none", true, false, false,0);
   }
   
   protected String createPreviouslyDeletedFolderPropertiesResponse(String file) {
-	  return getPropertyResponse(file,"folder", "none", false, false, true);
+	  return getPropertyResponse(file,"folder", "none", false, false, true,8976);
   }
 
   protected String createPreviouslyDeletedFilePropertiesResponse(String file) {
-	  return getPropertyResponse(file,"file", "none", false, false, true);
+	  return getPropertyResponse(file,"file", "none", false, false, true, 8765);
   }
 
+  protected String createDeletedIdZeroFilePropertiesResponse(String file) {
+	  return getPropertyResponse(file,"file", "none", false, false, true, 0);
+  }
+  
   protected String statusCommand(String file) {
     return "tf properties " + file;
   }
